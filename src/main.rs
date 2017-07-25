@@ -1,5 +1,6 @@
 use std::io;
 use std::io::prelude::*;
+mod parser;
 
 /*
     Obviously I do not intend for everything to happen here
@@ -7,11 +8,7 @@ use std::io::prelude::*;
     will at last only function as a REPL
 */ 
 
-enum Type{
-    Integer(i32),
-    Float(f32),
-    Symbol(String)
-}
+
 
 fn main() {
     println!("Hello, world!");
@@ -31,6 +28,18 @@ fn main() {
 
         input.pop(); // remove '\n'
 
+
+        let vec = parser::parse_string(input);
+        print_list(vec);
+        /*
+        match vec[0]{
+            parser::LispItem::Atom(parser::LispType::Integer(ref val)) => println!("raw:\"{}\"", val),
+            parser::LispItem::Atom(parser::LispType::Float(ref val)) => println!("raw:\"{}\"", val),
+            parser::LispItem::Atom(parser::LispType::Symbol(ref val)) => println!("raw:\"{}\"", val),
+            _ =>  println!("non-atom")
+        }
+        */
+        /*
         println!("raw:\"{}\"", input);
 
         let result = eval(input);
@@ -39,15 +48,21 @@ fn main() {
             Type::Float(v) => println!("type: float"),
             Type::Symbol(v) => println!("type: symbol")
         }
+        */
     }
 }
 
-fn eval(atom : String) -> Type{
-    if atom.parse::<i32>().is_ok(){
-        return Type::Integer(atom.parse::<i32>().unwrap())
+fn print_list(list : Vec<parser::LispItem>){
+    for item in list{
+        match item{
+            parser::LispItem::Atom(parser::LispType::Integer(ref val)) => print!("int:\"{}\"", val),
+            parser::LispItem::Atom(parser::LispType::Float(ref val)) => print!("float:\"{}\"", val),
+            parser::LispItem::Atom(parser::LispType::Symbol(ref val)) => print!("symbol:\"{}\"", val),
+            parser::LispItem::List(inner) => {
+                print!(" ( [{}]", inner.len());
+                print_list(inner);
+                print!(" ) ");
+            }
+        }
     }
-    if atom.parse::<f32>().is_ok(){
-        return Type::Float(atom.parse::<f32>().unwrap())
-    }
-    return Type::Symbol(atom)    
 }
