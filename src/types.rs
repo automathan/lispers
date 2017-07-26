@@ -5,6 +5,7 @@ pub enum LispType{
     Integer(i32),
     Float(f32),
     Symbol(String),
+    Function(Vec<String>, Vec<LispItem>), // (bindings,body)
     Bool(bool)
 }
 

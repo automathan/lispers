@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 use types::*;
 
-
-
-
 pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
     match item{
         LispItem::Atom(LispType::Integer(_)) => return item.clone(),
@@ -15,12 +12,49 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
                 None => println!("symbol \"{}\" is not in the symbol table", val)
             }
         },
+        LispItem::Atom(LispType::Function(_, _)) => {
+            // this part becomes relevant when functions can be used as arguments 
+            // let mut local_env : HashMap<String, LispItem> = HashMap::new();
+        },
         LispItem::List(inner) => {
             let head = inner[0].clone(); // expected to be a symbol/function
             
             match head{
                 LispItem::Atom(LispType::Symbol(ref val)) => {
-                    match val.as_ref(){
+                    return apply(val.clone(), inner, env);
+                },
+                _ => println!("non-symbol when symbol is expected")    
+            }
+        }
+    }
+    LispItem::Atom(LispType::Integer(-1))
+}
+
+fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispItem>) -> LispItem{
+    // TODO : If symbol, lookup function, if list, expect lambda. https://www.gnu.org/software/emacs/manual/html_node/eintr/lambda.html
+    let mut found = false;
+    match env.get(&val){
+        Some(var_val) => {
+            match var_val {
+                &LispItem::Atom(LispType::Function(ref bindings, ref body)) => {
+                    found = true;
+                    let mut local_env : HashMap<String, LispItem> = HashMap::new();
+                    if bindings.len() != inner.len() - 1 {
+                        println!("invalid number of args for function {}", val);
+                    }else{
+                        for i in 0..bindings.len(){
+                            local_env.insert(bindings[i].clone(), inner[1 + i].clone());
+                        }
+                        return eval(LispItem::List(body.clone()), &mut local_env);
+                    }
+                },
+                _ => println!("symbol \"{}\" is not a function", val)
+            }
+        },
+        None => {}
+    }
+    if !found {
+    match val.as_ref(){
                         "+" => { // this is not pretty, but does the job for now
                             let mut sum = 0;
                             for i in 1..inner.len(){
@@ -148,12 +182,31 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
                                 }
                             }
                         },
+                        "lambda" => {
+                            if inner.len() != 3 { // (lambda bindings body)
+                                println!("wrong number of arguments for function: {}", val);    
+                            }else{
+                                let bind = inner[1].clone();
+                                let body = inner[2].clone(); 
+                                match (bind, body){
+                                    (LispItem::List(a), LispItem::List(b)) => {
+                                        let mut tmp : Vec<String> = Vec::new();
+                                        for sym in a.clone() {
+                                            match sym{
+                                                LispItem::Atom(LispType::Symbol(ref val)) => tmp.push(val.clone()),
+                                                _ => println!("non-sym found in bindings list")          
+                                            }
+                                        }
+                                        if tmp.len() == a.len(){
+                                            return LispItem::Atom(LispType::Function(tmp, b));
+                                        }
+                                    },
+                                    (_, _) => println!("bad lambda args")
+                                }
+                            }
+                        },
                         _ => println!("undefined function: {}", val)
                     }
-                },
-                _ => println!("non-symbol when symbol is expected")    
-            }
-        }
     }
     LispItem::Atom(LispType::Integer(-1))
 }

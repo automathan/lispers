@@ -53,7 +53,7 @@ pub fn parse(tokens : Vec<String>) -> Vec<LispItem> {
                 return list;
             },
             _ => {
-                list.push(LispItem::Atom(eval(token)))
+                list.push(LispItem::Atom(parse_type(token)))
             }
         }
         if inc {
@@ -63,7 +63,7 @@ pub fn parse(tokens : Vec<String>) -> Vec<LispItem> {
     list
 }
 
-fn eval(atom : String) -> LispType{
+fn parse_type(atom : String) -> LispType{
     if atom.parse::<i32>().is_ok(){
         return LispType::Integer(atom.parse::<i32>().unwrap())
     }
