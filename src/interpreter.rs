@@ -8,6 +8,7 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
     match item{
         LispItem::Atom(LispType::Integer(_)) => return item.clone(),
         LispItem::Atom(LispType::Float(_)) => return item.clone(),
+        LispItem::Atom(LispType::Bool(_)) => return item.clone(),
         LispItem::Atom(LispType::Symbol(ref val)) => {
             match env.get(val){
                 Some(var_val) => return var_val.clone(),
@@ -31,16 +32,35 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
                             }
                             return LispItem::Atom(LispType::Integer(sum));
                         },
+                        "-" => {
+                            if inner.len() == 2{ // unary minus
+                                let term = eval(inner[1].clone(), env);
+                                match term{
+                                    LispItem::Atom(LispType::Integer(ref val)) => return LispItem::Atom(LispType::Integer(-(*val))),
+                                    _ => println!("invalid value for subtraction")
+                                }
+                            }else{
+                                let mut sum = 0;
+                                for i in 1..inner.len(){
+                                    let term = eval(inner[i].clone(), env);
+                                    match term{
+                                        LispItem::Atom(LispType::Integer(ref val)) => sum -= if i == 1 {-(*val)} else {*val},
+                                        _ => println!("invalid value for subtraction")
+                                    }
+                                }
+                                return LispItem::Atom(LispType::Integer(sum));
+                            }
+                        },
                         "*" => { // this is not pretty, but does the job for now
-                            let mut sum = 1;
+                            let mut prod = 1;
                             for i in 1..inner.len(){
                                 let term = eval(inner[i].clone(), env);
                                 match term{
-                                    LispItem::Atom(LispType::Integer(ref val)) => sum *= *val,
+                                    LispItem::Atom(LispType::Integer(ref val)) => prod *= *val,
                                     _ => println!("invalid value for multiplication")
                                 }
                             }
-                            return LispItem::Atom(LispType::Integer(sum));
+                            return LispItem::Atom(LispType::Integer(prod));
                         },
                         "define" => {
                             if inner.len() != 3{
@@ -71,7 +91,7 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
                             }
                         },
                         "cdr" => {
-                            if inner.len() != 2{
+                            if inner.len() != 2 {
                                 println!("wrong number of arguments for function: {}", val);
                             }else{
                                 let param = inner[1].clone(); // keep it symbolic, don't eval
@@ -87,9 +107,49 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
                                 }
                             }
                         },
+                        "<" => {
+                            if inner.len() != 3 {
+                                println!("wrong number of arguments for function: {}", val);
+                            }else{
+                                let param1 = eval(inner[1].clone(), env);
+                                let param2 = eval(inner[2].clone(), env); 
+                                match (param1,param2){
+                                    (LispItem::Atom(LispType::Integer(ref val1)),LispItem::Atom(LispType::Integer(ref val2))) => return LispItem::Atom(LispType::Bool(val1 < val2)),
+                                    _ => println!("can't compare!")
+                                }
+                            }
+                        },
+                        ">" => {
+                            if inner.len() != 3 {
+                                println!("wrong number of arguments for function: {}", val);
+                            }else{
+                                let param1 = eval(inner[1].clone(), env);
+                                let param2 = eval(inner[2].clone(), env); 
+                                match (param1,param2){
+                                    (LispItem::Atom(LispType::Integer(ref val1)),LispItem::Atom(LispType::Integer(ref val2))) => return LispItem::Atom(LispType::Bool(val1 > val2)),
+                                    _ => println!("can't compare!")
+                                }
+                            }
+                        },
+                        "cond" => {
+                            if inner.len() != 4 { // (cond statement do else)
+                                println!("wrong number of arguments for function: {}", val);
+                            }else{
+                                let statement = eval(inner[1].clone(), env);
+                                match statement{
+                                    LispItem::Atom(LispType::Bool(ref val)) => {
+                                        if *val {
+                                            return eval(inner[2].clone(), env);
+                                        }else{
+                                            return eval(inner[3].clone(), env);
+                                        }
+                                    },
+                                    _ => println!("not a boolean")
+                                }
+                            }
+                        },
                         _ => println!("undefined function: {}", val)
                     }
-                    //println!("A {}", val);
                 },
                 _ => println!("non-symbol when symbol is expected")    
             }

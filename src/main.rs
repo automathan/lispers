@@ -14,7 +14,10 @@ fn main() {
 
     global_env.insert("pi".to_string(), types::LispItem::Atom(types::LispType::Float(3.1416)));
     global_env.insert("e".to_string(), types::LispItem::Atom(types::LispType::Float(2.7183)));
+    global_env.insert("t".to_string(), types::LispItem::Atom(types::LispType::Bool(true)));
+    global_env.insert("nil".to_string(), types::LispItem::Atom(types::LispType::Bool(false)));
     
+
     loop { // REPL
         write!(&mut stdout, "lispers>").ok();
         
@@ -54,6 +57,7 @@ fn print_list(list : Vec<types::LispItem>){
     for item in list{
         match item{
             types::LispItem::Atom(types::LispType::Integer(ref val)) => print!(" {}:i32 ", val),
+            types::LispItem::Atom(types::LispType::Bool(ref val)) => print!(" {}:bool ", if *val {"t"} else {"nil"}),
             types::LispItem::Atom(types::LispType::Float(ref val)) => print!(" {}:f32 ", val),
             types::LispItem::Atom(types::LispType::Symbol(ref val)) => print!(" \"{}\":sym ", val),
             types::LispItem::List(inner) => {
@@ -69,6 +73,7 @@ fn print_list(list : Vec<types::LispItem>){
 fn print_item(item : types::LispItem){
     match item{
         types::LispItem::Atom(types::LispType::Integer(ref val)) => print!(" {}:i32 ", val),
+        types::LispItem::Atom(types::LispType::Bool(ref val)) => print!(" {}:bool ", if *val {"t"} else {"nil"}),
         types::LispItem::Atom(types::LispType::Float(ref val)) => print!(" {}:f32 ", val),
         types::LispItem::Atom(types::LispType::Symbol(ref val)) => print!(" \"{}\":sym ", val),
         types::LispItem::List(inner) => {

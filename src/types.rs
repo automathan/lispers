@@ -4,7 +4,8 @@
 pub enum LispType{
     Integer(i32),
     Float(f32),
-    Symbol(String)
+    Symbol(String),
+    Bool(bool)
 }
 
 #[derive(Clone)]
