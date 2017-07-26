@@ -267,4 +267,37 @@ mod basic_functions{
             }
         }
     }
+
+    #[test]
+    fn eval_lambda(){
+        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        
+        // defining a square function and calling it with different integers
+
+        let list = parser::parse_string(format!("(define sqr (lambda (n) (* n n)))"));
+        let first = list[0].clone();
+            
+        match first{
+            types::LispItem::List(_) => {
+                interpreter::eval(first.clone(), &mut global_env);
+            },
+            _ => println!("testing: not a list!")
+        }
+        
+        for i in -100..100{
+            let list = parser::parse_string(format!("(sqr {})", i));
+            let first = list[0].clone();
+            
+            match first{
+                types::LispItem::List(_) => {
+                    let res = interpreter::eval(first.clone(), &mut global_env);
+                    match res{
+                        types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),
+                        _ => println!("wrong type")
+                    }
+                },
+                _ => println!("testing: not a list!")
+            }
+        }
+    }
 }

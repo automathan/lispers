@@ -27,11 +27,10 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
             }
         }
     }
-    LispItem::Atom(LispType::Integer(-1))
+    LispItem::Atom(LispType::Integer(-1)) // until I make a real system for error handling 
 }
 
-fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispItem>) -> LispItem{
-    // TODO : If symbol, lookup function, if list, expect lambda. https://www.gnu.org/software/emacs/manual/html_node/eintr/lambda.html
+fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispItem>) -> LispItem{ // The name of this function is technically wrong.
     let mut found = false;
     match env.get(&val){
         Some(var_val) => {
@@ -54,159 +53,159 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
         None => {}
     }
     if !found {
-    match val.as_ref(){
-                        "+" => { // this is not pretty, but does the job for now
-                            let mut sum = 0;
-                            for i in 1..inner.len(){
-                                let term = eval(inner[i].clone(), env);
-                                match term{
-                                    LispItem::Atom(LispType::Integer(ref val)) => sum += *val,
-                                    _ => println!("invalid value for addition")
-                                }
-                            }
-                            return LispItem::Atom(LispType::Integer(sum));
-                        },
-                        "-" => {
-                            if inner.len() == 2{ // unary minus
-                                let term = eval(inner[1].clone(), env);
-                                match term{
-                                    LispItem::Atom(LispType::Integer(ref val)) => return LispItem::Atom(LispType::Integer(-(*val))),
-                                    _ => println!("invalid value for subtraction")
-                                }
-                            }else{
-                                let mut sum = 0;
-                                for i in 1..inner.len(){
-                                    let term = eval(inner[i].clone(), env);
-                                    match term{
-                                        LispItem::Atom(LispType::Integer(ref val)) => sum -= if i == 1 {-(*val)} else {*val},
-                                        _ => println!("invalid value for subtraction")
-                                    }
-                                }
-                                return LispItem::Atom(LispType::Integer(sum));
-                            }
-                        },
-                        "*" => { // this is not pretty, but does the job for now
-                            let mut prod = 1;
-                            for i in 1..inner.len(){
-                                let term = eval(inner[i].clone(), env);
-                                match term{
-                                    LispItem::Atom(LispType::Integer(ref val)) => prod *= *val,
-                                    _ => println!("invalid value for multiplication")
-                                }
-                            }
-                            return LispItem::Atom(LispType::Integer(prod));
-                        },
-                        "define" => {
-                            if inner.len() != 3{
-                                println!("wrong number of arguments for function: {}", val);
-                            }else{
-                                let key = inner[1].clone(); // keep it symbolic, don't eval
-                                let entry = eval(inner[2].clone(), env);
-                                match key {
-                                    LispItem::Atom(LispType::Symbol(ref val)) =>{ 
-                                        env.insert(val.clone(), entry);
-                                        return LispItem::Atom(LispType::Symbol(val.clone()));
-                                    },
-                                    _ => println!("invalid symbol")
-                                }
-                            }
-                        },
-                        "car" => {
-                            if inner.len() != 2{
-                                println!("wrong number of arguments for function: {}", val);
-                            }else{
-                                let param = inner[1].clone(); // keep it symbolic, don't eval
-                                match param {
-                                    LispItem::List(inner) =>{ 
-                                        return inner[0].clone();
-                                    },
-                                    _ => println!("non-list passed to car")
-                                }
-                            }
-                        },
-                        "cdr" => {
-                            if inner.len() != 2 {
-                                println!("wrong number of arguments for function: {}", val);
-                            }else{
-                                let param = inner[1].clone(); // keep it symbolic, don't eval
-                                match param {
-                                    LispItem::List(inner) =>{ 
-                                        let mut cdr : Vec<LispItem> = Vec::new();
-                                        for i in 1..inner.len(){
-                                            cdr.push(inner[i].clone());
-                                        }
-                                        return LispItem::List(cdr);
-                                    },
-                                    _ => println!("non-list passed to car")
-                                }
-                            }
-                        },
-                        "<" => {
-                            if inner.len() != 3 {
-                                println!("wrong number of arguments for function: {}", val);
-                            }else{
-                                let param1 = eval(inner[1].clone(), env);
-                                let param2 = eval(inner[2].clone(), env); 
-                                match (param1,param2){
-                                    (LispItem::Atom(LispType::Integer(ref val1)),LispItem::Atom(LispType::Integer(ref val2))) => return LispItem::Atom(LispType::Bool(val1 < val2)),
-                                    _ => println!("can't compare!")
-                                }
-                            }
-                        },
-                        ">" => {
-                            if inner.len() != 3 {
-                                println!("wrong number of arguments for function: {}", val);
-                            }else{
-                                let param1 = eval(inner[1].clone(), env);
-                                let param2 = eval(inner[2].clone(), env); 
-                                match (param1,param2){
-                                    (LispItem::Atom(LispType::Integer(ref val1)),LispItem::Atom(LispType::Integer(ref val2))) => return LispItem::Atom(LispType::Bool(val1 > val2)),
-                                    _ => println!("can't compare!")
-                                }
-                            }
-                        },
-                        "cond" => {
-                            if inner.len() != 4 { // (cond statement do else)
-                                println!("wrong number of arguments for function: {}", val);
-                            }else{
-                                let statement = eval(inner[1].clone(), env);
-                                match statement{
-                                    LispItem::Atom(LispType::Bool(ref val)) => {
-                                        if *val {
-                                            return eval(inner[2].clone(), env);
-                                        }else{
-                                            return eval(inner[3].clone(), env);
-                                        }
-                                    },
-                                    _ => println!("not a boolean")
-                                }
-                            }
-                        },
-                        "lambda" => {
-                            if inner.len() != 3 { // (lambda bindings body)
-                                println!("wrong number of arguments for function: {}", val);    
-                            }else{
-                                let bind = inner[1].clone();
-                                let body = inner[2].clone(); 
-                                match (bind, body){
-                                    (LispItem::List(a), LispItem::List(b)) => {
-                                        let mut tmp : Vec<String> = Vec::new();
-                                        for sym in a.clone() {
-                                            match sym{
-                                                LispItem::Atom(LispType::Symbol(ref val)) => tmp.push(val.clone()),
-                                                _ => println!("non-sym found in bindings list")          
-                                            }
-                                        }
-                                        if tmp.len() == a.len(){
-                                            return LispItem::Atom(LispType::Function(tmp, b));
-                                        }
-                                    },
-                                    (_, _) => println!("bad lambda args")
-                                }
-                            }
-                        },
-                        _ => println!("undefined function: {}", val)
+        match val.as_ref(){
+            "+" => { // this is not pretty, but does the job for now
+                let mut sum = 0;
+                for i in 1..inner.len(){
+                    let term = eval(inner[i].clone(), env);
+                    match term{
+                        LispItem::Atom(LispType::Integer(ref val)) => sum += *val,
+                        _ => println!("invalid value for addition")
                     }
+                }
+                return LispItem::Atom(LispType::Integer(sum));
+            },
+            "-" => {
+                if inner.len() == 2{ // unary minus
+                    let term = eval(inner[1].clone(), env);
+                    match term{
+                        LispItem::Atom(LispType::Integer(ref val)) => return LispItem::Atom(LispType::Integer(-(*val))),
+                        _ => println!("invalid value for subtraction")
+                    }
+                }else{
+                    let mut sum = 0;
+                    for i in 1..inner.len(){
+                        let term = eval(inner[i].clone(), env);
+                        match term{
+                            LispItem::Atom(LispType::Integer(ref val)) => sum -= if i == 1 {-(*val)} else {*val},
+                            _ => println!("invalid value for subtraction")
+                        }
+                    }
+                    return LispItem::Atom(LispType::Integer(sum));
+                }
+            },
+            "*" => {
+                let mut prod = 1;
+                for i in 1..inner.len(){
+                    let term = eval(inner[i].clone(), env);
+                    match term{
+                        LispItem::Atom(LispType::Integer(ref val)) => prod *= *val,
+                        _ => println!("invalid value for multiplication")
+                    }
+                }
+                return LispItem::Atom(LispType::Integer(prod));
+            },
+            "define" => {
+                if inner.len() != 3{
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let key = inner[1].clone(); // keep it symbolic, don't eval
+                    let entry = eval(inner[2].clone(), env);
+                    match key {
+                        LispItem::Atom(LispType::Symbol(ref val)) =>{ 
+                            env.insert(val.clone(), entry);
+                            return LispItem::Atom(LispType::Symbol(val.clone()));
+                        },
+                        _ => println!("invalid symbol")
+                    }
+                }
+            },
+            "car" => {
+                if inner.len() != 2{
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let param = inner[1].clone(); // keep it symbolic, don't eval
+                    match param {
+                        LispItem::List(inner) =>{ 
+                            return inner[0].clone();
+                        },
+                        _ => println!("non-list passed to car")
+                    }
+                }
+            },
+            "cdr" => {
+                if inner.len() != 2 {
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let param = inner[1].clone(); // keep it symbolic, don't eval
+                    match param {
+                        LispItem::List(inner) =>{ 
+                            let mut cdr : Vec<LispItem> = Vec::new();
+                            for i in 1..inner.len(){
+                                cdr.push(inner[i].clone());
+                            }
+                            return LispItem::List(cdr);
+                        },
+                        _ => println!("non-list passed to car")
+                    }
+                }
+            },
+            "<" => {
+                if inner.len() != 3 {
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let param1 = eval(inner[1].clone(), env);
+                    let param2 = eval(inner[2].clone(), env); 
+                    match (param1,param2){
+                        (LispItem::Atom(LispType::Integer(ref val1)),LispItem::Atom(LispType::Integer(ref val2))) => return LispItem::Atom(LispType::Bool(val1 < val2)),
+                        _ => println!("can't compare!")
+                    }
+                }
+            },
+            ">" => {
+                if inner.len() != 3 {
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let param1 = eval(inner[1].clone(), env);
+                    let param2 = eval(inner[2].clone(), env); 
+                    match (param1,param2){
+                        (LispItem::Atom(LispType::Integer(ref val1)),LispItem::Atom(LispType::Integer(ref val2))) => return LispItem::Atom(LispType::Bool(val1 > val2)),
+                        _ => println!("can't compare!")
+                    }
+                }
+            },
+            "cond" => {
+                if inner.len() != 4 { // (cond statement do else)
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let statement = eval(inner[1].clone(), env);
+                    match statement{
+                        LispItem::Atom(LispType::Bool(ref val)) => {
+                            if *val {
+                                return eval(inner[2].clone(), env);
+                            }else{
+                                return eval(inner[3].clone(), env);
+                            }
+                        },
+                        _ => println!("not a boolean")
+                    }
+                }
+            },
+            "lambda" => {
+                if inner.len() != 3 { // (lambda bindings body)
+                    println!("wrong number of arguments for function: {}", val);    
+                }else{
+                    let bind = inner[1].clone();
+                    let body = inner[2].clone(); 
+                    match (bind, body){
+                        (LispItem::List(a), LispItem::List(b)) => {
+                            let mut tmp : Vec<String> = Vec::new();
+                            for sym in a.clone() {
+                                match sym{
+                                    LispItem::Atom(LispType::Symbol(ref val)) => tmp.push(val.clone()),
+                                    _ => println!("non-sym found in bindings list")          
+                                }
+                            }
+                            if tmp.len() == a.len(){
+                                return LispItem::Atom(LispType::Function(tmp, b));
+                            }
+                        },
+                        (_, _) => println!("bad lambda args")
+                    }
+                }
+            },
+            _ => println!("undefined function: {}", val)
+        }
     }
     LispItem::Atom(LispType::Integer(-1))
 }
