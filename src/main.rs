@@ -7,12 +7,14 @@ mod parser;
 mod interpreter;
 
 fn main() {
-    println!("Lispe.rs v0.01");
+    println!("Lispe.rs v0.02");
     let mut stdout = io::stdout();
     
     let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
 
-    global_env.insert("x".to_string(), types::LispItem::Atom(types::LispType::Integer(42)));
+    global_env.insert("pi".to_string(), types::LispItem::Atom(types::LispType::Float(3.1416)));
+    global_env.insert("e".to_string(), types::LispItem::Atom(types::LispType::Float(2.7183)));
+    
     loop { // REPL
         write!(&mut stdout, "lispers>").ok();
         
@@ -29,11 +31,17 @@ fn main() {
         input.pop(); // remove '\n'
 
         let list = parser::parse_string(input);
-        //print_list(vec);
-        let first = list[0].clone();
+        let first = list[0].clone(); // because the input is actually a list with 1 element, the input list (or something else)
         match first{
-            types::LispItem::List(_) => {
-                print_item(interpreter::eval(first.clone(), &global_env));
+            types::LispItem::List(_) => print_item(interpreter::eval(first.clone(), &mut global_env)),
+            types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
+                match global_env.get(val){
+                    Some(var_val) => {
+                        print!("{} = ", val);
+                        print_item(var_val.clone());
+                    },
+                    None => println!("symbol \"{}\" is not in the symbol table", val)
+                }
             },
             _ => println!("Not a list!")
         }
