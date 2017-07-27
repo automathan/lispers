@@ -16,11 +16,14 @@ pub fn parse_string(input : String) -> Vec<LispItem>{
     for i in 0..in_tokens.len(){
         let token = in_tokens[i].clone();
         for c in token.chars(){
+            if c == '\'' {
+                tokens.push("'".to_string());
+            }
             if c == '(' {
                 tokens.push("(".to_string());
             }
         }
-        tokens.push(str::replace(&str::replace(&token, "(", ""), ")", ""));
+        tokens.push(str::replace(&str::replace(&str::replace(&token, "'", ""), "(", ""), ")", ""));
         for c in token.chars(){
             if c == ')' {
                 tokens.push(")".to_string());    
@@ -39,6 +42,22 @@ pub fn parse(tokens : Vec<String>) -> Vec<LispItem> {
         let token = tokens[i].clone();
         inc = true;
         match token.as_ref(){
+            "'" => { // Data mode
+                i = i + 1;
+                let dm_token = tokens[i].clone();
+                if dm_token == "(" {        
+                    let mut inner_tokens : Vec<String> = Vec::new();
+                    for j in i + 1..tokens.len(){
+                        inner_tokens.push(tokens[j].clone());
+                    }
+                    let inner_list = parse(inner_tokens);
+                    i += skip_count(&inner_list);
+                    inc = false;
+                    list.push(LispItem::List(inner_list, true));
+                }else{
+                    println!("attempting datamode at non-list!");
+                }
+            },
             "(" => {
                 let mut inner_tokens : Vec<String> = Vec::new();
                 for j in i + 1..tokens.len(){
@@ -47,7 +66,7 @@ pub fn parse(tokens : Vec<String>) -> Vec<LispItem> {
                 let inner_list = parse(inner_tokens);
                 i += skip_count(&inner_list);
                 inc = false;
-                list.push(LispItem::List(inner_list));    
+                list.push(LispItem::List(inner_list, false));    
             },
             ")" => {
                 return list;
@@ -78,7 +97,7 @@ fn skip_count(list : &Vec<LispItem>) -> usize {
     for item in list{
         match item{
             &LispItem::Atom(_) => sum += 1,
-            &LispItem::List(ref inner) => {
+            &LispItem::List(ref inner, _) => {
                 sum += skip_count(&inner);
             }
         }

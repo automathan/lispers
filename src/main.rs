@@ -36,7 +36,7 @@ fn main() {
         let list = parser::parse_string(input);
         let first = list[0].clone(); // because the input is actually a list with 1 element, the input list (or something else)
         match first{
-            types::LispItem::List(_) => print_item(interpreter::eval(first.clone(), &mut global_env)),
+            types::LispItem::List(_, _) => print_item(interpreter::eval(first.clone(), &mut global_env)),
             types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
                 match global_env.get(val){
                     Some(var_val) => {
@@ -60,7 +60,7 @@ fn print_list(list : Vec<types::LispItem>){
             types::LispItem::Atom(types::LispType::Bool(ref val)) => print!(" {}:bool ", if *val {"t"} else {"nil"}),
             types::LispItem::Atom(types::LispType::Float(ref val)) => print!(" {}:f32 ", val),
             types::LispItem::Atom(types::LispType::Symbol(ref val)) => print!(" \"{}\":sym ", val),
-            types::LispItem::List(inner) => {
+            types::LispItem::List(inner, _) => {
                 print!(" ( ");
                 print_list(inner);
                 print!(" ) ");
@@ -77,8 +77,11 @@ fn print_item(item : types::LispItem){
         types::LispItem::Atom(types::LispType::Bool(ref val)) => print!(" {}:bool ", if *val {"t"} else {"nil"}),
         types::LispItem::Atom(types::LispType::Float(ref val)) => print!(" {}:f32 ", val),
         types::LispItem::Atom(types::LispType::Symbol(ref val)) => print!(" \"{}\":sym ", val),
-        types::LispItem::List(inner) => {
+        types::LispItem::List(inner, dm) => {
             print!(" ( ");
+            if dm {
+                print!(" dm ");
+            }
             print_list(inner);
             print!(" ) ");
         },
@@ -101,7 +104,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * 2),
@@ -124,7 +127,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),
@@ -147,7 +150,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i > -i)),
@@ -170,7 +173,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i < -i)),
@@ -193,7 +196,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
@@ -229,7 +232,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
@@ -256,7 +259,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res {
                         types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i + 1),
@@ -278,7 +281,7 @@ mod basic_functions{
         let first = list[0].clone();
             
         match first{
-            types::LispItem::List(_) => {
+            types::LispItem::List(_, _) => {
                 interpreter::eval(first.clone(), &mut global_env);
             },
             _ => println!("testing: not a list!")
@@ -289,7 +292,7 @@ mod basic_functions{
             let first = list[0].clone();
             
             match first{
-                types::LispItem::List(_) => {
+                types::LispItem::List(_, _) => {
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),

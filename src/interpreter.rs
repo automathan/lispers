@@ -16,14 +16,18 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
             // this part becomes relevant when functions can be used as arguments 
             // let mut local_env : HashMap<String, LispItem> = HashMap::new();
         },
-        LispItem::List(inner) => {
-            let head = inner[0].clone(); // expected to be a symbol/function
-            
-            match head{
-                LispItem::Atom(LispType::Symbol(ref val)) => {
-                    return apply(val.clone(), inner, env);
-                },
-                _ => println!("non-symbol when symbol is expected")    
+        LispItem::List(inner, dm) => {
+            if dm{
+                return LispItem::List(inner, dm);
+            }else{
+                let head = inner[0].clone(); // expected to be a symbol/function
+                
+                match head{
+                    LispItem::Atom(LispType::Symbol(ref val)) => {
+                        return apply(val.clone(), inner, env);
+                    },
+                    _ => println!("non-symbol when symbol is expected")    
+                }
             }
         }
     }
@@ -44,7 +48,7 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
                         for i in 0..bindings.len(){
                             local_env.insert(bindings[i].clone(), inner[1 + i].clone());
                         }
-                        return eval(LispItem::List(body.clone()), &mut local_env);
+                        return eval(LispItem::List(body.clone(), false), &mut local_env);
                     }
                 },
                 _ => println!("symbol \"{}\" is not a function", val)
@@ -114,10 +118,14 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
                 if inner.len() != 2{
                     println!("wrong number of arguments for function: {}", val);
                 }else{
-                    let param = inner[1].clone(); // keep it symbolic, don't eval
+                    let param = eval(inner[1].clone(), env);
                     match param {
-                        LispItem::List(inner) =>{ 
-                            return inner[0].clone();
+                        LispItem::List(inner, dm) =>{
+                            if dm { 
+                                return inner[0].clone();
+                            }else{
+                                println!("non-dm-list passed to car");
+                            }
                         },
                         _ => println!("non-list passed to car")
                     }
@@ -127,16 +135,20 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
                 if inner.len() != 2 {
                     println!("wrong number of arguments for function: {}", val);
                 }else{
-                    let param = inner[1].clone(); // keep it symbolic, don't eval
+                    let param = eval(inner[1].clone(), env);
                     match param {
-                        LispItem::List(inner) =>{ 
-                            let mut cdr : Vec<LispItem> = Vec::new();
-                            for i in 1..inner.len(){
-                                cdr.push(inner[i].clone());
+                        LispItem::List(inner, dm) =>{ 
+                            if dm {
+                                let mut cdr : Vec<LispItem> = Vec::new();
+                                for i in 1..inner.len(){
+                                    cdr.push(inner[i].clone());
+                                }
+                                return LispItem::List(cdr, true);
+                            }else{
+                                println!("non-dm-list passed to cdr");
                             }
-                            return LispItem::List(cdr);
                         },
-                        _ => println!("non-list passed to car")
+                        _ => println!("non-list passed to cdr")
                     }
                 }
             },
@@ -188,7 +200,7 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
                     let bind = inner[1].clone();
                     let body = inner[2].clone(); 
                     match (bind, body){
-                        (LispItem::List(a), LispItem::List(b)) => {
+                        (LispItem::List(a, _), LispItem::List(b, _)) => {
                             let mut tmp : Vec<String> = Vec::new();
                             for sym in a.clone() {
                                 match sym{

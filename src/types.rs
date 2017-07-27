@@ -11,6 +11,6 @@ pub enum LispType{
 
 #[derive(Clone)]
 pub enum LispItem{
-    List(Vec<LispItem>),
+    List(Vec<LispItem>,bool), // items, datamode
     Atom(LispType)
 }
