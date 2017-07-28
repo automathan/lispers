@@ -1,6 +1,5 @@
 use std::io;
 use std::io::prelude::*;
-use std::collections::HashMap;
 
 mod types;
 mod parser;
@@ -10,12 +9,13 @@ fn main() {
     println!("Lispe.rs v0.03");
     let mut stdout = io::stdout();
     
-    let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+    //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+    let mut global_env = types::Environment::new(None);
 
-    global_env.insert("pi".to_string(), types::LispItem::Atom(types::LispType::Float(3.1416)));
-    global_env.insert("e".to_string(), types::LispItem::Atom(types::LispType::Float(2.7183)));
-    global_env.insert("t".to_string(), types::LispItem::Atom(types::LispType::Bool(true)));
-    global_env.insert("nil".to_string(), types::LispItem::Atom(types::LispType::Bool(false)));
+    global_env.insert(&"pi".to_string(), &types::LispItem::Atom(types::LispType::Float(3.1416)));
+    global_env.insert(&"e".to_string(), &types::LispItem::Atom(types::LispType::Float(2.7183)));
+    global_env.insert(&"t".to_string(), &types::LispItem::Atom(types::LispType::Bool(true)));
+    global_env.insert(&"nil".to_string(), &types::LispItem::Atom(types::LispType::Bool(false)));
     
 
     loop { // REPL
@@ -39,7 +39,7 @@ fn main() {
             types::LispItem::List(_, _) => print_item(interpreter::eval(first.clone(), &mut global_env)),
             types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
                 match global_env.get(val){
-                    Some(var_val) => {
+                    Some(ref var_val) => {
                         print!("{} = ", val);
                         print_item(var_val.clone());
                     },
@@ -95,7 +95,8 @@ mod basic_functions{
 
     #[test]
     fn eval_add(){
-        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        let mut global_env = types::Environment::new(None);
         
         // adding values to themselves and check if the result is twice the value of i
 
@@ -118,7 +119,7 @@ mod basic_functions{
 
     #[test]
     fn eval_mul(){
-        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        let mut global_env = types::Environment::new(None);
         
         // calculating square numbers
 
@@ -141,8 +142,8 @@ mod basic_functions{
 
     #[test]
     fn eval_greater(){
-        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
-        
+        //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        let mut global_env = types::Environment::new(None);
         // comparing numbers
 
         for i in -10000..10000{
@@ -164,7 +165,7 @@ mod basic_functions{
 
     #[test]
     fn eval_lesser(){
-        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        let mut global_env = types::Environment::new(None);
         
         // comparing numbers
 
@@ -187,8 +188,8 @@ mod basic_functions{
 
     #[test]
     fn eval_define(){
-        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
-        
+        //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        let mut global_env = types::Environment::new(None);
         // set a variable named "a" to a given integer value, then check if it actually is mapped to that value
 
         for i in -10000..10000{
@@ -204,7 +205,7 @@ mod basic_functions{
                             match global_env.get(val){
                                 Some(var_val) => {
                                     match var_val{
-                                        &types::LispItem::Atom(types::LispType::Integer(ref val)) => {
+                                        types::LispItem::Atom(types::LispType::Integer(ref val)) => {
                                             assert_eq!(i, *val);
                                         },
                                         _ => println!("wrong type!")
@@ -223,7 +224,7 @@ mod basic_functions{
 
     #[test]
     fn eval_globalvars(){
-        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        let mut global_env = types::Environment::new(None);
         
         // set a variable named "a" to a given integer value, then check if it actually is mapped to that value
 
@@ -240,7 +241,7 @@ mod basic_functions{
                             match global_env.get(val){
                                 Some(var_val) => {
                                     match var_val{
-                                        &types::LispItem::Atom(types::LispType::Integer(ref val)) => {
+                                        types::LispItem::Atom(types::LispType::Integer(ref val)) => {
                                             assert_eq!(i, *val);
                                         },
                                         _ => println!("wrong type!")
@@ -273,7 +274,7 @@ mod basic_functions{
 
     #[test]
     fn eval_lambda(){
-        let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
+        let mut global_env = types::Environment::new(None);
         
         // defining a square function and calling it with different integers
 
@@ -296,6 +297,45 @@ mod basic_functions{
                     let res = interpreter::eval(first.clone(), &mut global_env);
                     match res{
                         types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),
+                        _ => println!("wrong type")
+                    }
+                },
+                _ => println!("testing: not a list!")
+            }
+        }
+    }
+
+    #[test]
+    fn eval_factorial(){
+        let mut global_env = types::Environment::new(None);
+        
+        // factorial, also known as recursion 101
+
+        let list = parser::parse_string(format!("(define fact (lambda (n) (* n (cond (< n 2) 1 (fact (- n 1)))))))"));
+        let first = list[0].clone();
+    
+        match first{
+            types::LispItem::List(_, _) => {
+                interpreter::eval(first.clone(), &mut global_env);
+            },
+            _ => println!("testing: not a list!")
+        }
+        
+        for i in 1..11{
+            let list = parser::parse_string(format!("(fact {})", i));
+            let first = list[0].clone();
+            
+            match first{
+                types::LispItem::List(_, _) => {
+                    let res = interpreter::eval(first.clone(), &mut global_env);
+                    match res{
+                        types::LispItem::Atom(types::LispType::Integer(ref val)) =>{
+                            let mut iter_fact = 1;
+                            for j in 1..(i + 1){
+                                iter_fact *= j;
+                            }
+                            assert_eq!(*val, iter_fact);
+                        },
                         _ => println!("wrong type")
                     }
                 },

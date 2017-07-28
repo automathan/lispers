@@ -1,7 +1,6 @@
-use std::collections::HashMap;
 use types::*;
 
-pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
+pub fn eval(item : LispItem, env : &mut Environment) -> LispItem{
     match item{
         LispItem::Atom(LispType::Integer(_)) => return item.clone(),
         LispItem::Atom(LispType::Float(_)) => return item.clone(),
@@ -13,6 +12,7 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
             }
         },
         LispItem::Atom(LispType::Function(_, _)) => {
+            println!("kek");
             // this part becomes relevant when functions can be used as arguments 
             // let mut local_env : HashMap<String, LispItem> = HashMap::new();
         },
@@ -20,11 +20,11 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
             if dm{
                 return LispItem::List(inner, dm);
             }else{
-                let head = inner[0].clone(); // expected to be a symbol/function
+                let head = inner[0].clone(); // expected to be a symbol/function, immediate lambdas are not supported yet
                 
                 match head{
                     LispItem::Atom(LispType::Symbol(ref val)) => {
-                        return apply(val.clone(), inner, env);
+                        return apply(val, inner, env);
                     },
                     _ => println!("non-symbol when symbol is expected")    
                 }
@@ -34,19 +34,22 @@ pub fn eval(item : LispItem, env : &mut HashMap<String, LispItem>) -> LispItem{
     LispItem::Atom(LispType::Integer(-1)) // until I make a real system for error handling 
 }
 
-fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispItem>) -> LispItem{ // The name of this function is technically wrong.
+fn apply(val : &String, inner : Vec<LispItem>, env : &mut Environment) -> LispItem{ // The name of this function is technically wrong.
     let mut found = false;
-    match env.get(&val){
+    match env.get(val){
         Some(var_val) => {
             match var_val {
-                &LispItem::Atom(LispType::Function(ref bindings, ref body)) => {
+                LispItem::Atom(LispType::Function(ref bindings, ref body)) => {
                     found = true;
-                    let mut local_env : HashMap<String, LispItem> = HashMap::new();
+                    //let mut local_env : HashMap<String, LispItem> = HashMap::new();
+                    let mut local_env = Environment::new(Some(&env));
+
                     if bindings.len() != inner.len() - 1 {
                         println!("invalid number of args for function {}", val);
                     }else{
                         for i in 0..bindings.len(){
-                            local_env.insert(bindings[i].clone(), inner[1 + i].clone());
+                            let item = eval(inner[1 + i].clone(), &mut local_env);
+                            local_env.insert(&bindings[i].clone(), &item);//&inner[1 + i].clone());
                         }
                         return eval(LispItem::List(body.clone(), false), &mut local_env);
                     }
@@ -63,7 +66,8 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
                 for i in 1..inner.len(){
                     let term = eval(inner[i].clone(), env);
                     match term{
-                        LispItem::Atom(LispType::Integer(ref val)) => sum += *val,
+                        LispItem::Atom(LispType::Integer(ref val)) => {println!("val: {}", val);
+                     sum += *val},
                         _ => println!("invalid value for addition")
                     }
                 }
@@ -99,6 +103,14 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
                 }
                 return LispItem::Atom(LispType::Integer(prod));
             },
+            "list" => {
+                let mut list : Vec<LispItem> = Vec::new();
+                for i in 1..inner.len(){
+                    let term = eval(inner[i].clone(), env);
+                    list.push(term);
+                }
+                return LispItem::List(list, true);
+            },
             "define" => {
                 if inner.len() != 3{
                     println!("wrong number of arguments for function: {}", val);
@@ -107,7 +119,7 @@ fn apply(val : String, inner : Vec<LispItem>, env : &mut HashMap<String, LispIte
                     let entry = eval(inner[2].clone(), env);
                     match key {
                         LispItem::Atom(LispType::Symbol(ref val)) =>{ 
-                            env.insert(val.clone(), entry);
+                            env.insert(&val.clone(), &entry);
                             return LispItem::Atom(LispType::Symbol(val.clone()));
                         },
                         _ => println!("invalid symbol")
