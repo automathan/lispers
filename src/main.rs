@@ -282,4 +282,29 @@ mod basic_functions{
             }
         }
     }
+    
+    #[test]
+    fn eval_list_iteration(){
+        // factorial, also known as recursion 101
+        
+        let mut global_env = types::Environment::new(None);
+        let list = parser::parse_string(format!("(define lsum (lambda (li) (+ (car li) (cond (cdr li) (lsum (cdr li)) 0))))"));
+        interpreter::eval(list[0].clone(), &mut global_env);
+        
+        for i in 1..50{ // without tail recursion the call stack will explode on larger values of i
+            let mut expr : String = "(lsum '(".to_string();
+            for _ in 0..i{
+                expr.push_str(&format!("{} ", i));
+            }
+            expr.push_str("))");
+            let list = parser::parse_string(expr);
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Integer(ref val)) =>{
+                    assert_eq!(*val, i * i);
+                },
+                _ => println!("wrong type")
+            }
+        }
+    }
 }

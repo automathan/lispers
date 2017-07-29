@@ -43,11 +43,11 @@ pub fn parse(tokens : Vec<String>) -> Vec<LispItem> {
         inc = true;
         match token.as_ref(){
             "'" => { // Data mode
-                i = i + 1;
-                let dm_token = tokens[i].clone();
+                //i = i + 1;
+                let dm_token = tokens[i + 1].clone();
                 if dm_token == "(" {        
                     let mut inner_tokens : Vec<String> = Vec::new();
-                    for j in i + 1..tokens.len(){
+                    for j in (i + 2)..tokens.len(){
                         inner_tokens.push(tokens[j].clone());
                     }
                     let inner_list = parse(inner_tokens);
@@ -60,7 +60,7 @@ pub fn parse(tokens : Vec<String>) -> Vec<LispItem> {
             },
             "(" => {
                 let mut inner_tokens : Vec<String> = Vec::new();
-                for j in i + 1..tokens.len(){
+                for j in (i + 1)..tokens.len(){
                     inner_tokens.push(tokens[j].clone());
                 }
                 let inner_list = parse(inner_tokens);
@@ -97,8 +97,8 @@ fn skip_count(list : &Vec<LispItem>) -> usize {
     for item in list{
         match item{
             &LispItem::Atom(_) => sum += 1,
-            &LispItem::List(ref inner, _) => {
-                sum += skip_count(&inner);
+            &LispItem::List(ref inner, dm) => {
+                sum += skip_count(&inner) + if dm {1} else {0};
             }
         }
     }

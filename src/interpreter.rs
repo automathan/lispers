@@ -257,8 +257,8 @@ fn apply(val : &String, inner : Vec<LispItem>, env : &mut Environment) -> LispIt
                                 return eval(inner[3].clone(), env);
                             }
                         },
-                        LispItem::List(inner, _) => {
-                            if inner.len() > 0 {
+                        LispItem::List(li, _) => {
+                            if li.len() > 0 {
                                 return eval(inner[2].clone(), env);
                             }else{
                                 return eval(inner[3].clone(), env);
