@@ -17,7 +17,10 @@ pub fn eval(item : LispItem, env : &mut Environment) -> LispItem{
             // let mut local_env : HashMap<String, LispItem> = HashMap::new();
         },
         LispItem::List(inner, dm) => {
-            if dm{
+            if inner.len() == 0 {
+                return LispItem::Atom(LispType::Bool(false));   
+            }
+            if dm {
                 return LispItem::List(inner, dm);
             }else{
                 let head = inner[0].clone(); // expected to be a symbol/function, immediate lambdas are not supported yet
@@ -66,8 +69,7 @@ fn apply(val : &String, inner : Vec<LispItem>, env : &mut Environment) -> LispIt
                 for i in 1..inner.len(){
                     let term = eval(inner[i].clone(), env);
                     match term{
-                        LispItem::Atom(LispType::Integer(ref val)) => {println!("val: {}", val);
-                     sum += *val},
+                        LispItem::Atom(LispType::Integer(ref val)) => sum += *val,
                         _ => println!("invalid value for addition")
                     }
                 }
@@ -151,11 +153,53 @@ fn apply(val : &String, inner : Vec<LispItem>, env : &mut Environment) -> LispIt
                     match param {
                         LispItem::List(inner, dm) =>{ 
                             if dm {
+                                if inner.len() == 0{
+                                    return LispItem::Atom(LispType::Bool(false));
+                                }
                                 let mut cdr : Vec<LispItem> = Vec::new();
                                 for i in 1..inner.len(){
                                     cdr.push(inner[i].clone());
                                 }
                                 return LispItem::List(cdr, true);
+                            }else{
+                                println!("non-dm-list passed to cdr");
+                            }
+                        },
+                        _ => println!("non-list passed to cdr")
+                    }
+                }
+            },
+            "cons" => { // (cons e l) return element e prepended to list l (l.dm == t)
+                if inner.len() != 3 {
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let el = eval(inner[1].clone(), env);
+                    let li = eval(inner[2].clone(), env);
+                    match (el.clone(), li){
+                        (LispItem::Atom(_), LispItem::List(inner, true)) => {
+                            let mut out : Vec<LispItem> = Vec::new();
+                            out.push(el.clone());
+                            for i in 0..inner.len(){
+                                out.push(inner[i].clone());
+                            }
+                            return LispItem::List(out, true);
+                        },
+                        (_, _) => println!("bad cons input")
+                    }
+                }
+            },
+            "eval" => { // eval a datamode list (override datamode, basically)
+                 if inner.len() != 2 {
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let param = eval(inner[1].clone(), env);
+                    match param {
+                        LispItem::List(inner, dm) =>{ 
+                            if dm {
+                                if inner.len() == 0{
+                                    return LispItem::Atom(LispType::Bool(false));
+                                }
+                                return eval(LispItem::List(inner, false), env);
                             }else{
                                 println!("non-dm-list passed to cdr");
                             }
@@ -188,6 +232,18 @@ fn apply(val : &String, inner : Vec<LispItem>, env : &mut Environment) -> LispIt
                     }
                 }
             },
+            "=" => {
+                if inner.len() != 3 {
+                    println!("wrong number of arguments for function: {}", val);
+                }else{
+                    let param1 = eval(inner[1].clone(), env);
+                    let param2 = eval(inner[2].clone(), env); 
+                    match (param1,param2){
+                        (LispItem::Atom(LispType::Integer(ref val1)),LispItem::Atom(LispType::Integer(ref val2))) => return LispItem::Atom(LispType::Bool(val1 == val2)),
+                        _ => println!("can't compare!")
+                    }
+                }
+            },
             "cond" => {
                 if inner.len() != 4 { // (cond statement do else)
                     println!("wrong number of arguments for function: {}", val);
@@ -196,6 +252,13 @@ fn apply(val : &String, inner : Vec<LispItem>, env : &mut Environment) -> LispIt
                     match statement{
                         LispItem::Atom(LispType::Bool(ref val)) => {
                             if *val {
+                                return eval(inner[2].clone(), env);
+                            }else{
+                                return eval(inner[3].clone(), env);
+                            }
+                        },
+                        LispItem::List(inner, _) => {
+                            if inner.len() > 0 {
                                 return eval(inner[2].clone(), env);
                             }else{
                                 return eval(inner[3].clone(), env);

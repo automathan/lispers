@@ -6,7 +6,7 @@ mod parser;
 mod interpreter;
 
 fn main() {
-    println!("Lispe.rs v0.03");
+    println!("Lispe.rs v0.15");
     let mut stdout = io::stdout();
     
     //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
@@ -31,10 +31,11 @@ fn main() {
         .ok()
         .expect("Failed");
 
-        input.pop(); // remove '\n'
+        //input.pop(); // remove '\n'
 
         let list = parser::parse_string(input);
         let first = list[0].clone(); // because the input is actually a list with 1 element, the input list (or something else)
+        
         match first{
             types::LispItem::List(_, _) => print_item(interpreter::eval(first.clone(), &mut global_env)),
             types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
@@ -95,251 +96,189 @@ mod basic_functions{
 
     #[test]
     fn eval_add(){
-        //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
-        let mut global_env = types::Environment::new(None);
-        
         // adding values to themselves and check if the result is twice the value of i
-
+        
+        let mut global_env = types::Environment::new(None);
         for i in -10000..10000{
             let list = parser::parse_string(format!("(+ {} {})", i, i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * 2),
-                        _ => println!("wrong type")
-                    }
-                },
-                _ => println!("testing: not a list!")
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * 2),
+                _ => println!("wrong type")
             }
         }
     }
 
     #[test]
     fn eval_mul(){
-        let mut global_env = types::Environment::new(None);
-        
         // calculating square numbers
 
+        let mut global_env = types::Environment::new(None);
         for i in -1000..1000{
             let list = parser::parse_string(format!("(* {} {})", i, i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),
-                        _ => println!("wrong type")
-                    }
-                },
-                _ => println!("testing: not a list!")
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),
+                _ => println!("wrong type")
             }
         }
     }
 
     #[test]
     fn eval_greater(){
-        //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
-        let mut global_env = types::Environment::new(None);
         // comparing numbers
 
+        let mut global_env = types::Environment::new(None);
         for i in -10000..10000{
             let list = parser::parse_string(format!("(> {} {})", i, -i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i > -i)),
-                        _ => println!("wrong type")
-                    }
-                },
-                _ => println!("testing: not a list!")
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i > -i)),
+                _ => println!("wrong type")
             }
         }
     }
 
     #[test]
     fn eval_lesser(){
-        let mut global_env = types::Environment::new(None);
-        
         // comparing numbers
 
+        let mut global_env = types::Environment::new(None);
         for i in -10000..10000{
             let list = parser::parse_string(format!("(< {} {})", i, -i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i < -i)),
-                        _ => println!("wrong type")
-                    }
-                },
-                _ => println!("testing: not a list!")
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i < -i)),
+                _ => println!("wrong type")
+            }
+        }
+    }
+
+    #[test]
+    fn eval_equal(){
+        // comparing numbers
+
+        let mut global_env = types::Environment::new(None);
+        for i in -10000..10000{
+            let list = parser::parse_string(format!("(= {} {})", i, -i));
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i == -i)),
+                _ => println!("wrong type")
+            }
+        }
+
+        for i in -10000..10000{
+            let list = parser::parse_string(format!("(= {} {})", i, i));
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Bool(ref val)) => assert_eq!(*val, (i == i)),
+                _ => println!("wrong type")
             }
         }
     }
 
     #[test]
     fn eval_define(){
-        //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
-        let mut global_env = types::Environment::new(None);
         // set a variable named "a" to a given integer value, then check if it actually is mapped to that value
-
+        
+        let mut global_env = types::Environment::new(None);
         for i in -10000..10000{
             let list = parser::parse_string(format!("(define a {})", i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
-                            assert_eq!(*val, "a");
-                            match global_env.get(val){
-                                Some(var_val) => {
-                                    match var_val{
-                                        types::LispItem::Atom(types::LispType::Integer(ref val)) => {
-                                            assert_eq!(i, *val);
-                                        },
-                                        _ => println!("wrong type!")
-                                    }
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
+                    assert_eq!(*val, "a");
+                    match global_env.get(val){
+                        Some(var_val) => {
+                            match var_val{
+                                types::LispItem::Atom(types::LispType::Integer(ref val)) => {
+                                    assert_eq!(i, *val);
                                 },
-                                None => println!("symbol \"{}\" is not in the symbol table", val)
+                                _ => println!("wrong type!")
                             }
                         },
-                        _ => println!("wrong type!")
+                        None => println!("symbol \"{}\" is not in the symbol table", val)
                     }
                 },
-                _ => println!("testing: not a list!")
+                _ => println!("wrong type!")
             }
         }
     }
 
     #[test]
     fn eval_globalvars(){
-        let mut global_env = types::Environment::new(None);
-        
-        // set a variable named "a" to a given integer value, then check if it actually is mapped to that value
+        // set a variable named "a" to a given integer value, then perform arithmetics with that value
 
+        let mut global_env = types::Environment::new(None);
         for i in -10000..10000{
             let list = parser::parse_string(format!("(define a {})", i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
-                            assert_eq!(*val, "a");
-                            match global_env.get(val){
-                                Some(var_val) => {
-                                    match var_val{
-                                        types::LispItem::Atom(types::LispType::Integer(ref val)) => {
-                                            assert_eq!(i, *val);
-                                        },
-                                        _ => println!("wrong type!")
-                                    }
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Symbol(ref val)) => {
+                    assert_eq!(*val, "a");
+                    match global_env.get(val){
+                        Some(var_val) => {
+                            match var_val{
+                                types::LispItem::Atom(types::LispType::Integer(ref val)) => {
+                                    assert_eq!(i, *val);
                                 },
-                                None => println!("symbol \"{}\" is not in the symbol table", val)
+                                _ => println!("wrong type!")
                             }
                         },
-                        _ => println!("wrong type!")
+                        None => println!("symbol \"{}\" is not in the symbol table", val)
                     }
                 },
-                _ => println!("testing: not a list!")
+                    _ => println!("wrong type!")
             }
 
             let list = parser::parse_string("(+ a 1)".to_string());
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res {
-                        types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i + 1),
-                        _ => println!("wrong type")
-                    }
-                },
-                _ => println!("testing: not a list!")
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res {
+                types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i + 1),
+                _ => println!("wrong type")
             }
         }
     }
 
     #[test]
     fn eval_lambda(){
-        let mut global_env = types::Environment::new(None);
-        
         // defining a square function and calling it with different integers
-
+        
+        let mut global_env = types::Environment::new(None);
         let list = parser::parse_string(format!("(define sqr (lambda (n) (* n n)))"));
-        let first = list[0].clone();
-            
-        match first{
-            types::LispItem::List(_, _) => {
-                interpreter::eval(first.clone(), &mut global_env);
-            },
-            _ => println!("testing: not a list!")
-        }
+        interpreter::eval(list[0].clone(), &mut global_env);    
         
         for i in -100..100{
             let list = parser::parse_string(format!("(sqr {})", i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),
-                        _ => println!("wrong type")
-                    }
-                },
-                _ => println!("testing: not a list!")
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Integer(ref val)) => assert_eq!(*val, i * i),
+                _ => println!("wrong type")
             }
         }
     }
 
     #[test]
     fn eval_factorial(){
-        let mut global_env = types::Environment::new(None);
-        
         // factorial, also known as recursion 101
-
+        
+        let mut global_env = types::Environment::new(None);
         let list = parser::parse_string(format!("(define fact (lambda (n) (* n (cond (< n 2) 1 (fact (- n 1)))))))"));
-        let first = list[0].clone();
-    
-        match first{
-            types::LispItem::List(_, _) => {
-                interpreter::eval(first.clone(), &mut global_env);
-            },
-            _ => println!("testing: not a list!")
-        }
+        interpreter::eval(list[0].clone(), &mut global_env);
         
         for i in 1..11{
             let list = parser::parse_string(format!("(fact {})", i));
-            let first = list[0].clone();
-            
-            match first{
-                types::LispItem::List(_, _) => {
-                    let res = interpreter::eval(first.clone(), &mut global_env);
-                    match res{
-                        types::LispItem::Atom(types::LispType::Integer(ref val)) =>{
-                            let mut iter_fact = 1;
-                            for j in 1..(i + 1){
-                                iter_fact *= j;
-                            }
-                            assert_eq!(*val, iter_fact);
-                        },
-                        _ => println!("wrong type")
+            let res = interpreter::eval(list[0].clone(), &mut global_env);
+            match res{
+                types::LispItem::Atom(types::LispType::Integer(ref val)) =>{
+                    let mut iter_fact = 1;
+                    for j in 1..(i + 1){
+                        iter_fact *= j;
                     }
+                    assert_eq!(*val, iter_fact);
                 },
-                _ => println!("testing: not a list!")
+                _ => println!("wrong type")
             }
         }
     }
