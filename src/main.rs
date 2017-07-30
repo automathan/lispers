@@ -6,7 +6,7 @@ mod parser;
 mod interpreter;
 
 fn main() {
-    println!("Lispe.rs v0.15");
+    println!("Lispe.rs v0.18");
     let mut stdout = io::stdout();
     
     //let mut global_env : HashMap<String, types::LispItem> = HashMap::new();
@@ -57,16 +57,22 @@ fn main() {
 fn print_list(list : Vec<types::LispItem>){
     for item in list{
         match item{
+            /*
             types::LispItem::Atom(types::LispType::Integer(ref val)) => print!(" {}:i32 ", val),
             types::LispItem::Atom(types::LispType::Bool(ref val)) => print!(" {}:bool ", if *val {"t"} else {"nil"}),
             types::LispItem::Atom(types::LispType::Float(ref val)) => print!(" {}:f32 ", val),
             types::LispItem::Atom(types::LispType::Symbol(ref val)) => print!(" \"{}\":sym ", val),
+            */
             types::LispItem::List(inner, _) => {
                 print!(" ( ");
                 print_list(inner);
                 print!(" ) ");
             },
-            types::LispItem::Atom(types::LispType::Function(_, _)) => print!("?")
+            _ => println!("{}", item)
+            /*
+            types::LispItem::Atom(types::LispType::Function(_, _)) => print!("?"),
+            types::LispItem::Error(ref msg, ref src) => println!("Error: {}, source: {}", msg, src)
+            */
         }
     }
 }
@@ -74,10 +80,12 @@ fn print_list(list : Vec<types::LispItem>){
 #[allow(dead_code)]
 fn print_item(item : types::LispItem){
     match item{
+        /*
         types::LispItem::Atom(types::LispType::Integer(ref val)) => print!(" {}:i32 ", val),
         types::LispItem::Atom(types::LispType::Bool(ref val)) => print!(" {}:bool ", if *val {"t"} else {"nil"}),
         types::LispItem::Atom(types::LispType::Float(ref val)) => print!(" {}:f32 ", val),
         types::LispItem::Atom(types::LispType::Symbol(ref val)) => print!(" \"{}\":sym ", val),
+        */
         types::LispItem::List(inner, dm) => {
             print!(" ( ");
             if dm {
@@ -86,7 +94,11 @@ fn print_item(item : types::LispItem){
             print_list(inner);
             print!(" ) ");
         },
-        types::LispItem::Atom(types::LispType::Function(_, _)) => print!("?")
+        _ => println!("{}", item)
+        /*
+        types::LispItem::Atom(types::LispType::Function(_, _)) => print!("?"),
+        types::LispItem::Error(ref msg, ref src) => println!("Error: {}, source: {}", msg, src)
+        */
     }
 }
 

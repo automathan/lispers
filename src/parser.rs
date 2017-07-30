@@ -100,6 +100,7 @@ fn skip_count(list : &Vec<LispItem>) -> usize {
             &LispItem::List(ref inner, dm) => {
                 sum += skip_count(&inner) + if dm {1} else {0};
             }
+            &LispItem::Error(_, _) => return 0
         }
     }
     return sum + 2; // 2 because parenthesis
